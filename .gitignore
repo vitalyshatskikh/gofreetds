@@ -37,3 +37,8 @@ example/stored_procedure/stored_procedure
 example/sp_help/sp_help
 
 build_examples
+
+# ide
+.idea
+.vscode
+

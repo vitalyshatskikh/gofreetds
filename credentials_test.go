@@ -1,6 +1,7 @@
 package freetds
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -91,4 +92,27 @@ func TestParseConnectionStringApplicationName(t *testing.T) {
 		credentials := NewCredentials(connStr)
 		assert.Equal(t, expectedAppName, credentials.appName)
 	}
+}
+
+func TestParseConnectionStringConnTimeout(t *testing.T) {
+	expectedTimeout := defaultConnTimeoutSec + 5
+	validConnStrings := []string{
+		fmt.Sprintf("host=myhost;database=mydb;user=myuser;pwd=mypwd;conn timeout=%d", expectedTimeout),
+		fmt.Sprintf("host=myhost;database=mydb;user=myuser;pwd=mypwd;conn_timeout=%d", expectedTimeout),
+		fmt.Sprintf("host=myhost;database=mydb;user=myuser;pwd=mypwd;connection timeout=%d", expectedTimeout),
+		fmt.Sprintf("host=myhost;database=mydb;user=myuser;pwd=mypwd;connection_timeout=%d", expectedTimeout),
+	}
+
+	for _, connStr := range validConnStrings {
+		credentials := NewCredentials(connStr)
+		assert.Equal(t, expectedTimeout, credentials.connTimeout)
+	}
+}
+
+func TestParseConnectionStringDefaultConnTimeout(t *testing.T) {
+	expectedTimeout := defaultConnTimeoutSec
+	validConnString := fmt.Sprintf("host=myhost;database=mydb;user=myuser;pwd=mypwd;conn timeout=%d", expectedTimeout)
+
+	credentials := NewCredentials(validConnString)
+	assert.Equal(t, expectedTimeout, credentials.connTimeout)
 }

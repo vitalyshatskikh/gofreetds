@@ -39,7 +39,6 @@ import (
  }
 
  static void my_dblogin(LOGINREC* login, char* username, char* password, char* appname) {
-  dbsetlogintime(10);
   dberrhandle(err_handler);
   dbmsghandle(msg_handler);
   DBSETLUSER(login, username);
@@ -50,6 +49,10 @@ import (
 
  static void my_dblogin_setdb(LOGINREC* login, char* dbname) {
   DBSETLDBNAME(login, dbname);
+ }
+
+ static void my_dblogin_settimeout(LOGINREC* login, int timeout) {
+  dbsetlogintime(timeout);
  }
 
  static void my_setlversion(LOGINREC* login) {
@@ -214,6 +217,11 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
 	cappname := C.CString(conn.appName)
 	defer C.free(unsafe.Pointer(cappname))
 	C.my_dblogin(login, cuser, cpwd, cappname)
+
+	// If a connection timeout is specified in the connection string, add it to the login packet
+	if conn.connTimeout > 0 {
+		C.my_dblogin_settimeout(login, C.int(conn.connTimeout))
+	}
 
 	// If a database name is specified in the connection string,
 	// add the DB name to the login packet.

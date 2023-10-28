@@ -5,15 +5,17 @@ import (
 	"strings"
 )
 
+const defaultConnTimeoutSec = 10
+
 type credentials struct {
 	user, pwd, host, database, mirrorHost, compatibility, appName string
-	maxPoolSize, lockTimeout                                      int
+	maxPoolSize, lockTimeout, connTimeout                int
 }
 
 // NewCredentials fills credentials stusct from connection string
 func NewCredentials(connStr string) *credentials {
 	parts := strings.Split(connStr, ";")
-	crd := &credentials{maxPoolSize: 100}
+	crd := &credentials{maxPoolSize: 100, connTimeout: defaultConnTimeoutSec}
 	for _, part := range parts {
 		kv := strings.SplitN(part, "=", 2)
 		if len(kv) == 2 {
@@ -41,6 +43,10 @@ func NewCredentials(connStr string) *credentials {
 			case "lock timeout", "lock_timeout":
 				if i, err := strconv.Atoi(value); err == nil {
 					crd.lockTimeout = i
+				}
+			case "conn timeout", "conn_timeout", "connection timeout", "connection_timeout":
+				if i, err := strconv.Atoi(value); err == nil {
+					crd.connTimeout = i
 				}
 			}
 

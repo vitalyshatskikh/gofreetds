@@ -3,6 +3,7 @@ package freetds
 import (
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"strings"
 	"sync"
@@ -707,4 +708,47 @@ func TestConnectionApplicationName(t *testing.T) {
 	err = rst[0].ScanColumn("program_name", &actualAppName)
 	assert.Nil(t, err)
 	assert.Equal(t, appName, actualAppName)
+}
+
+func shouldRunSlowTests() bool {
+	return os.Getenv("GOFREETDS_RUN_SLOW_TESTS") == "yes"
+}
+
+func TestConnectionTimeout(t *testing.T) {
+	if !shouldRunSlowTests() {
+		t.Skip("skipping slow test")
+	}
+
+	slowSrv, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Errorf("can't start mock server")
+		return
+	}
+	defer slowSrv.Close()
+
+	testTimeoutSec := 2
+	connStr := fmt.Sprintf("user=sa;password=pwd;host=%s;database=test;conn_timeout=%d", slowSrv.Addr(), testTimeoutSec)
+
+	_, err = NewConn(connStr)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "statement has been terminated")
+}
+
+func TestConnectionTimeoutDefault(t *testing.T) {
+	if !shouldRunSlowTests() {
+		t.Skip("skipping slow test")
+	}
+
+	slowSrv, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Errorf("can't start mock server")
+		return
+	}
+	defer slowSrv.Close()
+
+	connStr := fmt.Sprintf("user=sa;password=pwd;host=%s;database=test", slowSrv.Addr())
+
+	_, err = NewConn(connStr)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "statement has been terminated")
 }

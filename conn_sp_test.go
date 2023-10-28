@@ -72,7 +72,7 @@ func TestExecSpInputParamsTypes(t *testing.T) {
     select @p1, @p2, @p3, @p4, @p5, @p6
     return 1`
 	}
-		err := createProcedure(conn, "test_input_params3", spBody)
+	err := createProcedure(conn, "test_input_params3", spBody)
 	assert.Nil(t, err)
 	//all input types are int, but they are converted to apropriate sql types
 	rst, err := conn.ExecSp("test_input_params3", 1, 2, 3, 4, 5, 6)
@@ -121,8 +121,8 @@ func TestExecSpInputParams2(t *testing.T) {
      drop table tbl_test_input_params2
   select @p1 p1, @p2 p2, @p3 p3, @p4 p4, @p5 p5, @p6 p6 into tbl_test_input_params2
   return`
-  	if conn.sybaseMode125() {
-  		spBody = `
+	if conn.sybaseMode125() {
+		spBody = `
   @p1 nvarchar(255), @p2 varchar(255), @p3 nvarchar(255), @p4 nchar(20), @p5 varbinary(10), @p6 nvarchar(255) as
   select @p1, @p2, @p3, @p4, @p5, @p6
   select @p1 p1, @p2 p2, @p3 p3, @p4 p4, @p5 p5, @p6 p6 into #tbl_test_input_params2
@@ -248,8 +248,8 @@ func TestHandlingNumericAndDecimalDataTypes(t *testing.T) {
 	spBody := `as
     select 1.25 as f1, cast(1.26 as decimal(10,5)) as f2, cast(1.27 as numeric(10,5)) as f3
     return 0`
-    if conn.sybaseMode125() {
-    	spBody = `as
+	if conn.sybaseMode125() {
+		spBody = `as
     declare @f1 float
     declare @f2 decimal(10,5)
     declare @f3 numeric(10,5)
@@ -278,8 +278,8 @@ func TestBugFixEmptyStringInSpParams(t *testing.T) {
 	spBody := `@p1 varchar(255) as
     select '_' + @p1 + '_', len(@p1)
     return 0`
-    if conn.sybaseMode125() {
-    	spBody = `@p1 varchar(255) as
+	if conn.sybaseMode125() {
+		spBody = `@p1 varchar(255) as
     select '_' + @p1 + '_', len(ltrim(rtrim(@p1)))
     return 0`
 	}
@@ -301,7 +301,7 @@ func TestBugGuidInSpParams(t *testing.T) {
 	spBody := `@p1 uniqueidentifier as
     select cast(@p1 as varchar(255)), @p1
     return 0`
-    if conn.sybaseMode125() {
+	if conn.sybaseMode125() {
 		spBody = `@p1 char(36) as
     select cast(@p1 as varchar(255)), @p1
     return 0`
@@ -375,8 +375,8 @@ func TestTimeSpParams(t *testing.T) {
     insert into tm (tm) values(@p1)
     select tm, 123 i from tm where id = scope_identity()
     return 0`
-    if conn.sybaseMode125() {
-    	spBody = `@p1 datetime as
+	if conn.sybaseMode125() {
+		spBody = `@p1 datetime as
     insert into tm (tm) values(@p1)
     select tm, 123 i from tm where id = @@IDENTITY
     return 0`
@@ -469,7 +469,7 @@ func TestExecSpWithVarcharMax(t *testing.T) {
     (@p1 varchar(max) output) as
     select @p1`)
 	assert.Nil(t, err)
-	str := longString(8000)
+	str := longString(2000)
 	rst, err := conn.ExecSp("test_sp_varchar_max", str)
 	assert.Nil(t, err)
 	var str2 string

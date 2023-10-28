@@ -37,7 +37,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			if typ == SYBUNIQUE {
 				size = 36
 			}
-			if typ == SYBNUMERIC || typ==SYBDECIMAL {
+			if typ == SYBNUMERIC || typ == SYBDECIMAL {
 				size = 8
 			}
 			bindTyp, typ := dbbindtype(typ)
@@ -50,6 +50,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			col.canVary = (size == 2147483647 && typ == SYBCHAR) ||
 				(size == 2147483647 && typ == XSYBXML) ||
 				(size == 1073741823 && typ == SYBBINARY) ||
+				(size == 2147483647 && typ == SYBBINARY) ||
 				(size == 64512 && typ == SYBIMAGE) //varbinary(MAX)
 
 			col.name = name

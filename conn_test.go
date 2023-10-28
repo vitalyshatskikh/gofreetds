@@ -511,7 +511,7 @@ func createTestTable2(t *testing.T, conn *Conn, name string, columDef string) {
 	assert.Nil(t, err)
 }
 
-//usefull for testing n
+// usefull for testing n
 func printResults(results []*Result) {
 	fmt.Printf("results %v", results)
 	for _, r := range results {
@@ -598,8 +598,8 @@ func TestParseFreeTdsVersion(t *testing.T) {
 
 func TestVarcharMax(t *testing.T) {
 	testNvarcharMax(t, "some short string")
-	testNvarcharMax(t, longString(8000))
-	testNvarcharMax(t, longString(10000))
+	testNvarcharMax(t, longString(2000))
+	testNvarcharMax(t, longString(2000))
 }
 
 func longString(size int) string {

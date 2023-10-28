@@ -681,3 +681,30 @@ func TestMessageNumbers(t *testing.T) {
 	assert.Equal(t, c.HasMessageNumber(msgnumOne), 2)
 	assert.Equal(t, c.HasMessageNumber(msgnumTwo), 1)
 }
+
+func TestConnectionApplicationName(t *testing.T) {
+	appName := "MyAppName"
+	connStr := fmt.Sprintf("%s;app=%s", testDbConnStr(1), appName)
+
+	conn, err := NewConn(connStr)
+	if err != nil {
+		t.Errorf("can't connect to the test database")
+		return
+	}
+	defer conn.Close()
+
+	sql := "select program_name from sys.dm_exec_sessions where session_id = @@spid"
+	if conn.sybaseMode() || conn.sybaseMode125() {
+		sql = "select program_name from master..sysprocesses where spid = @@spid"
+	}
+
+	rst, err := conn.Exec(sql)
+
+	assert.Len(t, rst, 1)
+	assert.True(t, rst[0].Next())
+
+	var actualAppName string
+	err = rst[0].ScanColumn("program_name", &actualAppName)
+	assert.Nil(t, err)
+	assert.Equal(t, appName, actualAppName)
+}

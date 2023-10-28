@@ -77,3 +77,18 @@ func TestParseConnectionStringEqualsInValue(t *testing.T) {
 		assert.Equal(t, 1000, crd.lockTimeout)
 	}
 }
+
+func TestParseConnectionStringApplicationName(t *testing.T) {
+	validConnStrings := []string{
+		"host=myServerAddress;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror;app=myAppName",
+		"host=myServerAddress;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror;application=myAppName",
+		"host=myServerAddress;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror;application name=myAppName",
+		"host=myServerAddress;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror;application_name=myAppName",
+	}
+	expectedAppName := "myAppName"
+
+	for _, connStr := range validConnStrings {
+		credentials := NewCredentials(connStr)
+		assert.Equal(t, expectedAppName, credentials.appName)
+	}
+}

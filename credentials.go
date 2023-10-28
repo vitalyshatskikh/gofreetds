@@ -6,8 +6,8 @@ import (
 )
 
 type credentials struct {
-	user, pwd, host, database, mirrorHost, compatibility string
-	maxPoolSize, lockTimeout                             int
+	user, pwd, host, database, mirrorHost, compatibility, appName string
+	maxPoolSize, lockTimeout                                      int
 }
 
 // NewCredentials fills credentials stusct from connection string
@@ -30,6 +30,8 @@ func NewCredentials(connStr string) *credentials {
 				crd.pwd = value
 			case "failover partner", "failover_partner", "mirror", "mirror_host", "mirror host":
 				crd.mirrorHost = value
+			case "app", "application", "application name", "application_name":
+				crd.appName = value
 			case "max pool size", "max_pool_size":
 				if i, err := strconv.Atoi(value); err == nil {
 					crd.maxPoolSize = i

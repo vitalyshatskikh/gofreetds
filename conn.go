@@ -1,4 +1,4 @@
-//Package freetds provides interface to Microsoft Sql Server database by using freetds C lib: http://www.freetds.org.
+// Package freetds provides interface to Microsoft Sql Server database by using freetds C lib: http://www.freetds.org.
 package freetds
 
 import (
@@ -38,12 +38,13 @@ import (
    return msgHandler((long)dbproc, msgno, msgstate, severity, msgtext, srvname, procname, line);
  }
 
- static void my_dblogin(LOGINREC* login, char* username, char* password) {
+ static void my_dblogin(LOGINREC* login, char* username, char* password, char* appname) {
   dbsetlogintime(10);
   dberrhandle(err_handler);
   dbmsghandle(msg_handler);
   DBSETLUSER(login, username);
   DBSETLPWD(login, password);
+  DBSETLAPP(login, appname);
   dbsetlname(login, "UTF-8", DBSETCHARSET);
  }
 
@@ -85,7 +86,7 @@ func deleteConnection(conn *Conn) {
 const SYBASE string = "sybase"
 const SYBASE_12_5 string = "sybase_12_5"
 
-//Connection to the database.
+// Connection to the database.
 type Conn struct {
 	dbproc  *C.DBPROCESS
 	addr    int64
@@ -128,11 +129,12 @@ func (conn *Conn) addError(err string) {
 	conn.Error += err
 }
 
-//Connect to the database with connection string, returns new connection or error.
-//Example:
-//  conn, err := NewConn("host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror")
+// Connect to the database with connection string, returns new connection or error.
+// Example:
 //
-//Mirror is optional, other params are mandatory.
+//	conn, err := NewConn("host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror;app=MyApp")
+//
+// Mirror and app are optional, other params are mandatory.
 func NewConn(connStr string) (*Conn, error) {
 	return connectWithCredentials(NewCredentials(connStr))
 }
@@ -169,8 +171,8 @@ func (conn *Conn) connect() (*Conn, error) {
 	return conn, nil
 }
 
-//If conn belongs to pool release connection to the pool.
-//If not close connection.
+// If conn belongs to pool release connection to the pool.
+// If not close connection.
 func (conn *Conn) Close() {
 	if conn.belongsToPool == nil {
 		conn.close()
@@ -189,7 +191,7 @@ func (conn *Conn) close() {
 	}
 }
 
-//ensure only one getDbProc at a time
+// ensure only one getDbProc at a time
 var getDbProcMutex = &sync.Mutex{}
 
 func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
@@ -209,7 +211,9 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
 	defer C.free(unsafe.Pointer(cuser))
 	cpwd := C.CString(conn.pwd)
 	defer C.free(unsafe.Pointer(cpwd))
-	C.my_dblogin(login, cuser, cpwd)
+	cappname := C.CString(conn.appName)
+	defer C.free(unsafe.Pointer(cappname))
+	C.my_dblogin(login, cuser, cpwd, cappname)
 
 	// If a database name is specified in the connection string,
 	// add the DB name to the login packet.
@@ -248,7 +252,7 @@ func dbProcError(msg string) error {
 	return fmt.Errorf("%s\n%s\n%s", msg, lastError, lastMessage)
 }
 
-//Change database.
+// Change database.
 func (conn *Conn) DbUse() error {
 	if len(conn.database) > 0 {
 		cdatabase := C.CString(conn.database)
@@ -270,7 +274,7 @@ func (conn *Conn) clearMessages() {
 	conn.messageNums = make(map[int]int)
 }
 
-//Returns the number of occurances of a supplied FreeTDS message number.
+// Returns the number of occurances of a supplied FreeTDS message number.
 func (conn *Conn) HasMessageNumber(msgno int) int {
 	conn.messageMutex.RLock()
 	count := conn.messageNums[msgno]
@@ -279,7 +283,7 @@ func (conn *Conn) HasMessageNumber(msgno int) int {
 	return count
 }
 
-//Execute sql query.
+// Execute sql query.
 func (conn *Conn) Exec(sql string) ([]*Result, error) {
 	results, err := conn.exec(sql)
 	if err != nil && (conn.isDead() || conn.isMirrorSlave()) {
@@ -292,8 +296,8 @@ func (conn *Conn) Exec(sql string) ([]*Result, error) {
 	return results, err
 }
 
-//Reconnect to the database, cleaning closing the existing connection
-//and switching to a Mirror Database if necessary.
+// Reconnect to the database, cleaning closing the existing connection
+// and switching to a Mirror Database if necessary.
 func (conn *Conn) reconnect() error {
 	var err error
 	for i := 0; i < 2; i++ {
@@ -371,25 +375,25 @@ func (conn *Conn) isLive() bool {
 	return false
 }
 
-//Begin database transaction.
+// Begin database transaction.
 func (conn *Conn) Begin() error {
 	_, err := conn.Exec("begin transaction")
 	return err
 }
 
-//Commit database transaction.
+// Commit database transaction.
 func (conn *Conn) Commit() error {
 	_, err := conn.Exec("commit transaction")
 	return err
 }
 
-//Rollback database transaction.
+// Rollback database transaction.
 func (conn *Conn) Rollback() error {
 	_, err := conn.Exec("if @@trancount > 0 rollback transaction")
 	return err
 }
 
-//Query database and return first column in the first row as result.
+// Query database and return first column in the first row as result.
 func (conn *Conn) SelectValue(sql string) (interface{}, error) {
 	results, err := conn.Exec(sql)
 	if err != nil || results == nil {
@@ -401,11 +405,13 @@ func (conn *Conn) SelectValue(sql string) (interface{}, error) {
 	return results[0].Rows[0][0], nil
 }
 
-//Checking database mirroring status:
-//  isDefined - is mirror defined (mirror parametar passed in connection string)
-//  isActive  - is mirroring active for this database
-//  isMaster  - is the current host master for this database
-//Returns error if could not execute query to get current mirroring status.
+// Checking database mirroring status:
+//
+//	isDefined - is mirror defined (mirror parametar passed in connection string)
+//	isActive  - is mirroring active for this database
+//	isMaster  - is the current host master for this database
+//
+// Returns error if could not execute query to get current mirroring status.
 func (conn *Conn) MirrorStatus() (bool, bool, bool, error) {
 	if !conn.mirrorDefined() {
 		return false, false, false, nil

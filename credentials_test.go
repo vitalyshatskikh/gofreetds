@@ -116,3 +116,16 @@ func TestParseConnectionStringDefaultConnTimeout(t *testing.T) {
 	credentials := NewCredentials(validConnString)
 	assert.Equal(t, expectedTimeout, credentials.connTimeout)
 }
+
+func TestParseConnectionStringTDSVersion(t *testing.T) {
+	expectedVersion := "myVersion"
+	validConnStrings := []string{
+		fmt.Sprintf("host=myhost;database=mydb;user=myuser;pwd=mypwd;tds_version=%s", expectedVersion),
+		fmt.Sprintf("host=myhost;database=mydb;user=myuser;pwd=mypwd;tds version=%s", expectedVersion),
+	}
+
+	for _, connStr := range validConnStrings {
+		credentials := NewCredentials(connStr)
+		assert.Equal(t, expectedVersion, credentials.tdsVersion)
+	}
+}

@@ -55,8 +55,8 @@ import (
   dbsetlogintime(timeout);
  }
 
- static void my_setlversion(LOGINREC* login) {
-  dbsetlversion(login, DBVERSION_72);
+ static void my_setlversion(LOGINREC* login, BYTE dbversion) {
+  dbsetlversion(login, dbversion);
  }
 
  static long dbproc_addr(DBPROCESS * dbproc) {
@@ -233,12 +233,8 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
 		C.my_dblogin_setdb(login, cdatabase)
 	}
 
-	// Added for Sybase compatibility mode
-	// Version cannot be set to 7.2
-	// Allowing version to be set inside freetds
-	if !conn.sybaseMode() && !conn.sybaseMode125() {
-		C.my_setlversion(login)
-	}
+	// Handle TDS version for compatibility purposes
+	conn.setFreeTdsVersion(login)
 
 	chost := C.CString(conn.host)
 	defer C.free(unsafe.Pointer(chost))
@@ -248,6 +244,35 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
 	}
 	conn.readFreeTdsVersion()
 	return dbproc, nil
+}
+
+// setFreeTdsVersion applies TDS version from connection string (if specified)
+// to login packet
+func (conn *Conn) setFreeTdsVersion(login *C.LOGINREC) {
+	switch conn.tdsVersion {
+	// used constants from FreeTDS implementation
+	case "4.6":
+		C.my_setlversion(login, C.DBVERSION_46)
+	case "1.0.0":
+		C.my_setlversion(login, C.DBVERSION_100)
+	case "4.2":
+		C.my_setlversion(login, C.DBVERSION_42)
+	case "7.1":
+		C.my_setlversion(login, C.DBVERSION_71)
+	case "7.2":
+		C.my_setlversion(login, C.DBVERSION_72)
+	case "7.3":
+		C.my_setlversion(login, C.DBVERSION_73)
+	case "7.4":
+		C.my_setlversion(login, C.DBVERSION_74)
+	default:
+		// Added for Sybase compatibility mode
+		// Version cannot be set to 7.2
+		// Allowing version to be set inside freetds
+		if !conn.sybaseMode() && !conn.sybaseMode125() {
+			C.my_setlversion(login, C.DBVERSION_72)
+		}
+	}
 }
 
 func (conn *Conn) readFreeTdsVersion() {

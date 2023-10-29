@@ -8,8 +8,8 @@ import (
 const defaultConnTimeoutSec = 10
 
 type credentials struct {
-	user, pwd, host, database, mirrorHost, compatibility, appName string
-	maxPoolSize, lockTimeout, connTimeout                int
+	user, pwd, host, database, mirrorHost, compatibility, appName, tdsVersion string
+	maxPoolSize, lockTimeout, connTimeout                                     int
 }
 
 // NewCredentials fills credentials stusct from connection string
@@ -48,8 +48,9 @@ func NewCredentials(connStr string) *credentials {
 				if i, err := strconv.Atoi(value); err == nil {
 					crd.connTimeout = i
 				}
+			case "tds version", "tds_version":
+				crd.tdsVersion = value
 			}
-
 		}
 	}
 	return crd
